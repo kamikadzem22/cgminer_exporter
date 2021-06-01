@@ -2,15 +2,18 @@ kind: pipeline
 type: exec
 name: deploy to client
 
+clone:
+  disable: true
+
 platform:
   os: windows
   arch: amd64
 
 steps:
-- name: Echo
+- name: clone
   commands:
-    - echo Test
-    - echo %DRONE_MACHINE%
+  - git clone ssh://git@gogs.local:10022/kamikadzem22/cgminer_exporter.git .
+  - git checkout $DRONE_COMMIT
 
 node:
   target: monitoring
