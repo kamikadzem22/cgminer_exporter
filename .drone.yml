@@ -37,7 +37,7 @@ steps:
 
 - name: create service
   commands:
-  - nssm install cgminer_exporter C:\\Python39\\python.exe C:\\Monitoring\\cgminer_exporter\cgminer_exporter.py
+  - nssm install cgminer_exporter C:\\Python39\\python.exe C:\\Monitoring\\cgminer_exporter\main.py
   - nssm set cgminer_exporter AppDirectory C:\\Monitoring\\cgminer_exporter
 - name: start service
   commands:
