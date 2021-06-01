@@ -124,4 +124,4 @@ async def get_metrics(target: str):
     
 
 if __name__ == "__main__":
-    uvicorn.run("cgminer_exporter:app", host="0.0.0.0", port=9154, log_level="info")
+    uvicorn.run("main:app", host="0.0.0.0", port=9154, log_level="info")
