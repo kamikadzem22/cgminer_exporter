@@ -17,11 +17,11 @@ steps:
 - name: copy files
   commands:
   - mkdir C:\\Monitoring\\cgminer_exporter
-  - xcopy * C:\\Monitoring\\cgminer_exporter
+  - xcopy * C:\\Monitoring\\cgminer_exporter /exclude:.drone.yml
 
 - name: create service
   commands:
-  - nssm remove cgminer_exporter
+  - nssm remove cgminer_exporter confirm
   - nssm install cgminer_exporter C:\\Python39\\python.exe
   - nssm set cgminer_exporter AppDirectory C:\\Monitoring\\cgminer_exporter
 - name: start service
