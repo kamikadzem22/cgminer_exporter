@@ -11,3 +11,6 @@ steps:
   commands:
     - echo Test
     - echo %DRONE_MACHINE%
+
+node:
+  target: monitoring
