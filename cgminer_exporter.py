@@ -59,7 +59,7 @@ def linesplit(socket):
     if buffer:
         return buffer
 
-def getfromIP(ip, timeout=20):
+def getfromIP(ip, timeout=5):
     data = {}
     for func in [ 'stats', 'version', 'pools', 'summary', 'devs' ]:
         s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -102,6 +102,7 @@ class MetricsHandler(tornado.web.RequestHandler):
                     self.write(metric_summary(metricdata[type], tags))
                 elif type == "stats":
                     self.write(metric_stats(metricdata[type], tags))
+
         except Exception as e:
             exc_type, exc_obj, exc_tb = exc_info()
 
@@ -214,10 +215,10 @@ def main():
         (r"/metrics", MetricsHandler)
 
     ], debug=False)
-    http_server = tornado.httpserver.HTTPServer(application, idle_connection_timeout=5)
-    # http_server.bind(9154)
-    # http_server.start(0)
-    http_server.listen(9154)
+    http_server = tornado.httpserver.HTTPServer(application, idle_connection_timeout=10)
+    http_server.bind(9154)
+    http_server.start(1)
+    #http_server.listen(9154)
     tornado.ioloop.IOLoop.current().start()
 
 if __name__ == "__main__":
