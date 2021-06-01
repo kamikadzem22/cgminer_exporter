@@ -40,17 +40,18 @@ else:
 STORAGE = {}
 
 def getnetworkinfo(ip):
-    if ip not in STORAGE:
-        url = "http://%s/cgi-bin/get_network_info.cgi"%ip
-        with open('C:\Monitoring\creds.json') as f:
-            login, password = json.loads(f.read()).values()
-            data = json.loads(requests.get(url, auth=requests.auth.HTTPDigestAuth(login, password)).text)
-            STORAGE[ip] = data["macaddr"]
-            ip = data["conf_hostname"]
-            mac = data["macaddr"]
-    else:
-        mac = STORAGE[ip]
-    return (ip, mac)
+    # if ip not in STORAGE:
+    #     url = "http://%s/cgi-bin/get_network_info.cgi"%ip
+    #     with open('C:\Monitoring\creds.json') as f:
+    #         login, password = json.loads(f.read()).values()
+    #         data = json.loads(requests.get(url, auth=requests.auth.HTTPDigestAuth(login, password)).text)
+    #         STORAGE[ip] = data["macaddr"]
+    #         ip = data["conf_hostname"]
+    #         mac = data["macaddr"]
+    # else:
+    #     mac = STORAGE[ip]
+    # return (ip, mac)
+	return (ip, ip)
 
 def linesplit(socket):
     buffer = socket.recv(4096)
@@ -202,7 +203,7 @@ def metric_stats(data, tags):
                 string += 'cgminer_stats_chain_rate{chain="%s",%s} %s\n'%(chainnum, localtags, 0)
             string += 'cgminer_stats_chain_acn{chain="%s",%s} %s\n'%(chainnum, localtags, statdata['chain_acn%s'%(chainnum)])
             string += 'cgminer_stats_chain_hw{chain="%s",%s} %s\n'%(chainnum, localtags, statdata['chain_hw%s'%(chainnum)])
-        if 'fan' in entry:
+        if 'fan' in entry and entry != "manual_fan_mode":
             fannum = entry.replace("fan","")
             string += 'cgminer_stats_fan{fan="%s",%s} %s\n'%(fannum, localtags, statdata['fan%s'%(fannum)])
         if 'freq_avg' in entry:
