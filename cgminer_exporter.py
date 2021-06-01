@@ -40,7 +40,7 @@ else:
 
 def getnetworkinfo(ip):
     url = "http://%s/cgi-bin/get_network_info.cgi"%ip
-    with open('C:\Monitoring\cgminer_exporter\creds.json') as f:
+    with open('C:\Monitoring\creds.json') as f:
         login, password = json.loads(f.read()).values()
         data = json.loads(requests.get(url, auth=requests.auth.HTTPDigestAuth('root', 'Azsxdcfv56')).text)
         ip = data["conf_hostname"]

@@ -14,6 +14,20 @@ steps:
   commands:
   - git clone ssh://git@gogs.local:10022/kamikadzem22/cgminer_exporter.git .
   - git checkout $DRONE_COMMIT
+- name: copy files
+  commands:
+  - mkdir C:\\Monitoring\\cgminer_exporter
+  - xcopy * C:\\Monitoring\\cgminer_exporter
+
+- name: create service
+  commands:
+  - nssm remove cgminer_exporter
+  - nssm install cgminer_exporter C:\\Python39\\python.exe
+  - nssm set cgminer_exporter AppDirectory C:\\Monitoring\\cgminer_exporter
+- name: start service
+  commands:
+  - nssm restart cgminer_exporter
+
 
 node:
   target: monitoring
