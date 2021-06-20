@@ -27,9 +27,17 @@ from typing import Optional
 import asyncio
 from fastapi import FastAPI, Response
 from metric import *
+
+if sys.platform == 'win32':
+    loop = asyncio.ProactorEventLoop()
+    asyncio.set_event_loop(loop)
+
 app = FastAPI()
 statusdata = {}
     
+
+
+
 STORAGE = {}
 
 AVAILABLE_COMMANDS = [ 'stats', 'version', 'pools', 'summary', 'devs' ]

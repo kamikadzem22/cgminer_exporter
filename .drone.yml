@@ -43,6 +43,9 @@ steps:
   commands:
   - nssm restart cgminer_exporter
 
+trigger:
+  branch:
+  - master
 
 node:
   target: monitoring
