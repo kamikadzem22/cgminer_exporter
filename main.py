@@ -28,9 +28,9 @@ import asyncio
 from fastapi import FastAPI, Response
 from metric import *
 
-if sys.platform == 'win32':
-    loop = asyncio.ProactorEventLoop()
-    asyncio.set_event_loop(loop)
+# if sys.platform == 'win32':
+#     loop = asyncio.ProactorEventLoop()
+#     asyncio.set_event_loop(loop)
 
 app = FastAPI()
 statusdata = {}
