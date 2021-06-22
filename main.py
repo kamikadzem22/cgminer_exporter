@@ -82,7 +82,7 @@ def linesplit(socket):
 	if buffer:
 		return buffer
 
-async def tcp_client(ip, command, timeout=1, retries=5, sleep=3):
+async def tcp_client(ip, command, timeout=1, retries=7, sleep=3):
     data = b''
 
     writer = None
