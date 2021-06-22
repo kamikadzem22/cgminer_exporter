@@ -47,8 +47,18 @@ def metric_stats(data, tags):
 	localtags = '%s'%(tags)
 	for entry in statdata:
 		if 'temp' in entry:
+			
 			tempnum = entry.replace("temp","")
-			string += 'cgminer_stats_temp{temp="%s",%s} %s\n'%(tempnum, localtags, statdata['temp%s'%(tempnum)])
+			temp = statdata['temp%s'%(tempnum)]
+			# if '-' in temp:
+			# 	temp = temp.split('-')[1] or '0'
+
+			if str(temp) == '-':
+				continue 
+			if '-' in str(temp):
+				temp = temp.split('-')[-1]
+				
+			string += 'cgminer_stats_temp{temp="%s",%s} %s\n'%(tempnum, localtags, temp)
 		if 'chain_hw' in entry:
 			chainnum = entry.replace("chain_hw","")
 			if statdata['chain_rate%s'%(chainnum)]:

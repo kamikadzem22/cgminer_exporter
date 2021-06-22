@@ -37,7 +37,7 @@ steps:
 
 - name: create service
   commands:
-  - nssm install cgminer_exporter C:\\Python39\\python.exe C:\\Monitoring\\cgminer_exporter\main.py
+  - nssm install cgminer_exporter uvicorn.exe main:app --workers 4 --port 9154
   - nssm set cgminer_exporter AppDirectory C:\\Monitoring\\cgminer_exporter
 - name: start service
   commands:

@@ -21,15 +21,17 @@ import requests
 import traceback
 import requests
 import traceback
+
 import time
 from sys import exc_info
 pp = pprint.PrettyPrinter(indent=4)
-import logging
 from typing import Optional
 import asyncio
 from fastapi import FastAPI, Response, HTTPException
 from metric import *
 
+import logging
+log = logging.getLogger("uvicorn:error")
 if sys.platform == 'win32':
     loop = asyncio.ProactorEventLoop()
     asyncio.set_event_loop(loop)
@@ -80,7 +82,7 @@ def linesplit(socket):
 	if buffer:
 		return buffer
 
-async def tcp_client(ip, command, timeout=1, retries=3, sleep=2):
+async def tcp_client(ip, command, timeout=1, retries=5, sleep=3):
     data = b''
 
     writer = None
@@ -101,6 +103,8 @@ async def tcp_client(ip, command, timeout=1, retries=3, sleep=2):
                 break
             except Exception as e:
                 retries-=1
+                sleep+=1
+                timeout=2
                 if writer:
                     writer.close()
                 if retries == 0:
@@ -110,21 +114,10 @@ async def tcp_client(ip, command, timeout=1, retries=3, sleep=2):
             finally:
                 if writer:
                     writer.close()
-        # reader.close()
-    # s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    # try:
-        
-    #     s.settimeout(timeout)
-    #     s.connect((ip,int(4028)))
-    #     s.send(('{"command":"%s"}' % command).encode())
-    #     data = linesplit(s)
-        
-    # finally:
-    #     s.close()
     return json.loads(data.decode().replace('\x00', '').replace('}{', '},{'))
 
 async def fetch_metrics(ip, command):
-    data = await tcp_client(ip, command, 5)
+    data = await tcp_client(ip, command)
     return (command, data)
 
 @app.get("/")
@@ -145,12 +138,6 @@ def parse_tags(target, metricdata):
         tags = 'instance="%s",bmminer_version="%s",api_version="%s",type="%s",miner="%s"'%(target,metricdata['version']['VERSION'][0]['BMMiner'],metricdata['version']['VERSION'][0]['API'],metricdata['version']['VERSION'][0]['Type'],metricdata['version']['VERSION'][0]['Miner'])
     else:
         tags = 'instance="%s",api_version="%s",type="%s",miner="%s"'%(target, metricdata['version']['VERSION'][0]['API'],metricdata['version']['VERSION'][0]['Type'],metricdata['version']['VERSION'][0]['Miner'])
-    
-    # if target not in STORAGE:
-    #     hostname, mac = fetch_network_info(target)
-    # else:
-    #     hostname, mac = STORAGE[target]
-    # tags+=',hostname="%s",mac="%s"'%(hostname, mac)
     return tags
 
 @app.get("/metrics")
@@ -169,13 +156,16 @@ async def get_metrics(target: str):
         # metric_data = dict(
         #     [fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
         # )
-        
+
         tags = parse_tags(target, metric_data)
 
 
         res+= "\n".join(
                 [export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
             )
+        # except Exception as e:
+        #     log.error("Error parsing metrics: "+str(e))
+        #     raise HTTPException(status_code=500, detail="Server error")
         # res+= "\n".join(
         # await asyncio.gather(
         #     *[export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
@@ -184,13 +174,17 @@ async def get_metrics(target: str):
     except (asyncio.exceptions.TimeoutError, socket.timeout):
         # traceback.print_exc()
         raise HTTPException(status_code=408, detail="Timeout while trying to fetch metrics")
-    except (ConnectionRefusedError, ConnectionResetError):
+    except (ConnectionRefusedError, ConnectionResetError) as e:
         # traceback.print_exc()
+        log.error(str(e))
         raise HTTPException(status_code=502, detail="Device has terminated the connection")
 
-
+    except (Exception) as e:
+        traceback.print_exc()
+        log.error(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     return Response(res)
     
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=9154, log_level="info", workers=2)
+    uvicorn.run("main:app", host="0.0.0.0", port=9154, log_level="info", debug=True, workers=4)
