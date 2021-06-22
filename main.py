@@ -20,17 +20,19 @@ import datetime
 import requests
 import traceback
 import requests
+import traceback
+import time
 from sys import exc_info
 pp = pprint.PrettyPrinter(indent=4)
-
+import logging
 from typing import Optional
 import asyncio
 from fastapi import FastAPI, Response, HTTPException
 from metric import *
 
-# if sys.platform == 'win32':
-#     loop = asyncio.ProactorEventLoop()
-#     asyncio.set_event_loop(loop)
+if sys.platform == 'win32':
+    loop = asyncio.ProactorEventLoop()
+    asyncio.set_event_loop(loop)
 
 app = FastAPI()
 statusdata = {}
@@ -78,30 +80,51 @@ def linesplit(socket):
 	if buffer:
 		return buffer
 
-async def tcp_client(ip, command, timeout=1):
+async def tcp_client(ip, command, timeout=1, retries=3, sleep=2):
     data = b''
 
-    # reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, 4028), timeout=timeout)
+    writer = None
 
-    # writer.write(('{"command":"%s"}' % command).encode())
-    # await writer.drain()
+    while retries > 0:
+            try:
+                reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, 4028), timeout=timeout)
 
-    # while True:
-    #     chunk = await reader.read(100)
-    #     if not chunk:
-    #         break
-    #     data += chunk
+                writer.write(('{"command":"%s"}' % command).encode())
+                await writer.drain()
 
-    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s.settimeout(timeout)
-    s.connect((ip,int(4028)))
-    s.send(('{"command":"%s"}' % command).encode())
-    data = linesplit(s)
-    s.close()
+                while True:
+                    chunk = await reader.read(100)
+                    if not chunk:
+                        break
+                    data += chunk
+
+                break
+            except Exception as e:
+                retries-=1
+                if writer:
+                    writer.close()
+                if retries == 0:
+                    raise e
+                await asyncio.sleep(sleep)
+                
+            finally:
+                if writer:
+                    writer.close()
+        # reader.close()
+    # s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    # try:
+        
+    #     s.settimeout(timeout)
+    #     s.connect((ip,int(4028)))
+    #     s.send(('{"command":"%s"}' % command).encode())
+    #     data = linesplit(s)
+        
+    # finally:
+    #     s.close()
     return json.loads(data.decode().replace('\x00', '').replace('}{', '},{'))
 
 async def fetch_metrics(ip, command):
-    data = await tcp_client(ip, command, 2)
+    data = await tcp_client(ip, command, 5)
     return (command, data)
 
 @app.get("/")
@@ -131,25 +154,27 @@ def parse_tags(target, metricdata):
     return tags
 
 @app.get("/metrics")
-def get_metrics(target: str):
+async def get_metrics(target: str):
     res = "#CGMiner metrics export\n"
 
 
 
     try:
 
-        # metric_data = dict(await asyncio.gather(
-        #     *[fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
-        # ))
-        metric_data = dict(
-            [await fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
-        )
+        metric_data = dict(await asyncio.gather(
+            *[fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
+        ))
+        # print(*[fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS], sep="\n")
+        # exit()
+        # metric_data = dict(
+        #     [fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
+        # )
         
         tags = parse_tags(target, metric_data)
 
 
         res+= "\n".join(
-                [await export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
+                [export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
             )
         # res+= "\n".join(
         # await asyncio.gather(
@@ -157,8 +182,11 @@ def get_metrics(target: str):
         # )
     # )
     except (asyncio.exceptions.TimeoutError, socket.timeout):
+        # traceback.print_exc()
         raise HTTPException(status_code=408, detail="Timeout while trying to fetch metrics")
-    
+    except (ConnectionRefusedError, ConnectionResetError):
+        # traceback.print_exc()
+        raise HTTPException(status_code=502, detail="Device has terminated the connection")
 
 
     return Response(res)

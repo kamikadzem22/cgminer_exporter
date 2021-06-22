@@ -1,5 +1,5 @@
 import datetime
-async def metric_pool(data, tags):
+def metric_pool(data, tags):
 	string = "# Pools Data\n"
 	string += "cgminer_pool_count{%s} %s\n"%(tags, len(data['POOLS']))
 	for pool in data['POOLS']:
@@ -28,7 +28,7 @@ async def metric_pool(data, tags):
 		string += 'cgminer_pool_stratum_active{%s} %s\n'%(localtags, active)
 	return (string)
 
-async def metric_summary(data, tags):
+def metric_summary(data, tags):
 	string = "#Pool Summary\n"
 	localtags = tags
 	string += 'cgminer_summary_rejected{%s} %s\n'%(localtags, data['SUMMARY'][0]['Rejected'])
@@ -41,7 +41,7 @@ async def metric_summary(data, tags):
 
 	return (string)
 
-async def metric_stats(data, tags):
+def metric_stats(data, tags):
 	string = "# Stats\n"
 	statdata = data['STATS'][1]
 	localtags = '%s'%(tags)
