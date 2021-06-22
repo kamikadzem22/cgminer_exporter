@@ -121,12 +121,16 @@ async def get_metrics(target: str):
     tags = await parse_tags(target, metric_data)
 
 
-    
     res+= "\n".join(
-        await asyncio.gather(
-            *[export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
+            [export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
         )
-    )
+
+    
+    # res+= "\n".join(
+    #     await asyncio.gather(
+    #         *[export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
+    #     )
+    # )
 
     return Response(res)
     
