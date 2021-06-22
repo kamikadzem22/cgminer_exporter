@@ -95,7 +95,7 @@ async def get_stats(cmd:str, target: str):
         return text
     return {'error': 'unknown command'}
 
-async def parse_tags(target, metricdata):
+def parse_tags(target, metricdata):
     if 'CGMiner' in metricdata['version']['VERSION'][0]:
         tags = 'instance="%s",cgminer_version="%s",api_version="%s",type="%s",miner="%s"'%(target,metricdata['version']['VERSION'][0]['CGMiner'],metricdata['version']['VERSION'][0]['API'],metricdata['version']['VERSION'][0]['Type'],metricdata['version']['VERSION'][0]['Miner'])
     elif 'BMMiner' in metricdata['version']['VERSION'][0]:
@@ -114,11 +114,15 @@ async def parse_tags(target, metricdata):
 async def get_metrics(target: str):
     res = "#CGMiner metrics export\n"
 
-    metric_data = dict(await asyncio.gather(
-        *[fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
-    ))
+    # metric_data = dict(await asyncio.gather(
+    #     *[fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
+    # ))
+
+    metric_data = dict(
+        [await fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
+    )
     
-    tags = await parse_tags(target, metric_data)
+    tags = parse_tags(target, metric_data)
 
 
     res+= "\n".join(
