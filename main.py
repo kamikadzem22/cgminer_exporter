@@ -48,23 +48,23 @@ export_metrics = {
     'stats': metric_stats
 }
 
-STORAGE = {}
-try:
-    with open('C:\\Monitoring\\creds.json') as f:
-        CGI_LOGIN, CGI_PASSWORD = json.loads(f.read()).values()
-except:
-    CGI_LOGIN = None
-    CGI_PASSWORD = None
+# STORAGE = {}
+# try:
+#     with open('C:\\Monitoring\\creds.json') as f:
+#         CGI_LOGIN, CGI_PASSWORD = json.loads(f.read()).values()
+# except:
+#     CGI_LOGIN = None
+#     CGI_PASSWORD = None
 
-def fetch_network_info(target):
-    if CGI_LOGIN == None:
-        STORAGE[target] = ("", "")
-    if target not in STORAGE:
-        url = "http://%s/cgi-bin/get_network_info.cgi"%target
-        data = json.loads(requests.get(url, auth=requests.auth.HTTPDigestAuth(CGI_LOGIN, CGI_PASSWORD)).text)
-        STORAGE[target] = (data["conf_hostname"], data["macaddr"]) 
+# def fetch_network_info(target):
+#     if CGI_LOGIN == None:
+#         STORAGE[target] = ("", "")
+#     if target not in STORAGE:
+#         url = "http://%s/cgi-bin/get_network_info.cgi"%target
+#         data = json.loads(requests.get(url, auth=requests.auth.HTTPDigestAuth(CGI_LOGIN, CGI_PASSWORD)).text)
+#         STORAGE[target] = (data["conf_hostname"], data["macaddr"]) 
 
-    return STORAGE[target]
+#     return STORAGE[target]
 
 async def tcp_client(ip, command):
     data = b''
@@ -103,11 +103,11 @@ async def parse_tags(target, metricdata):
     else:
         tags = 'instance="%s",api_version="%s",type="%s",miner="%s"'%(target, metricdata['version']['VERSION'][0]['API'],metricdata['version']['VERSION'][0]['Type'],metricdata['version']['VERSION'][0]['Miner'])
     
-    if target not in STORAGE:
-        hostname, mac = fetch_network_info(target)
-    else:
-        hostname, mac = STORAGE[target]
-    tags+=',hostname="%s",mac="%s"'%(hostname, mac)
+    # if target not in STORAGE:
+    #     hostname, mac = fetch_network_info(target)
+    # else:
+    #     hostname, mac = STORAGE[target]
+    # tags+=',hostname="%s",mac="%s"'%(hostname, mac)
     return tags
 
 @app.get("/metrics")
