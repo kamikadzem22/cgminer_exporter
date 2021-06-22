@@ -119,24 +119,24 @@ async def get_metrics(target: str):
 
     try:
 
-        metric_data = dict(await asyncio.gather(
-            *[fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
-        ))
-        # metric_data = dict(
-        #     [await fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
-        # )
+        # metric_data = dict(await asyncio.gather(
+        #     *[fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
+        # ))
+        metric_data = dict(
+            [await fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
+        )
         
         tags = parse_tags(target, metric_data)
 
 
-        # res+= "\n".join(
-        #         [export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
-        #     )
         res+= "\n".join(
-        await asyncio.gather(
-            *[export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
-        )
-    )
+                [await export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
+            )
+        # res+= "\n".join(
+        # await asyncio.gather(
+        #     *[export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
+        # )
+    # )
     except asyncio.exceptions.TimeoutError:
         raise HTTPException(status_code=408, detail="Timeout while trying to fetch metrics")
     
