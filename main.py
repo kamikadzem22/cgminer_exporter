@@ -66,23 +66,42 @@ export_metrics = {
 
 #     return STORAGE[target]
 
+def linesplit(socket):
+	buffer = socket.recv(4096)
+	done = False
+	while not done:
+		more = socket.recv(4096)
+		if not more:
+			done = True
+		else:
+			buffer = buffer+more
+	if buffer:
+		return buffer
+
 async def tcp_client(ip, command, timeout=1):
     data = b''
 
-    reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, 4028), timeout=timeout)
+    # reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, 4028), timeout=timeout)
 
-    writer.write(('{"command":"%s"}' % command).encode())
-    await writer.drain()
+    # writer.write(('{"command":"%s"}' % command).encode())
+    # await writer.drain()
 
-    while True:
-        chunk = await reader.read(100)
-        if not chunk:
-            break
-        data += chunk
+    # while True:
+    #     chunk = await reader.read(100)
+    #     if not chunk:
+    #         break
+    #     data += chunk
+
+    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    s.connect((ip,int(4028)))
+    s.send(('{"command":"%s"}' % command).encode())
+    data = linesplit(s)
+    s.close()
     return json.loads(data.decode().replace('\x00', '').replace('}{', '},{'))
 
 async def fetch_metrics(ip, command):
-    data = await tcp_client(ip, command)
+    data = await tcp_client(ip, command, 2)
     return (command, data)
 
 @app.get("/")
@@ -112,7 +131,7 @@ def parse_tags(target, metricdata):
     return tags
 
 @app.get("/metrics")
-async def get_metrics(target: str):
+def get_metrics(target: str):
     res = "#CGMiner metrics export\n"
 
 
@@ -137,7 +156,7 @@ async def get_metrics(target: str):
         #     *[export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
         # )
     # )
-    except asyncio.exceptions.TimeoutError:
+    except (asyncio.exceptions.TimeoutError, socket.timeout):
         raise HTTPException(status_code=408, detail="Timeout while trying to fetch metrics")
     
 
