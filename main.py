@@ -25,7 +25,7 @@ pp = pprint.PrettyPrinter(indent=4)
 
 from typing import Optional
 import asyncio
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, HTTPException
 from metric import *
 
 # if sys.platform == 'win32':
@@ -66,9 +66,10 @@ export_metrics = {
 
 #     return STORAGE[target]
 
-async def tcp_client(ip, command):
+async def tcp_client(ip, command, timeout=1):
     data = b''
-    reader, writer = await asyncio.open_connection(ip, 4028)
+
+    reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, 4028), timeout=timeout)
 
     writer.write(('{"command":"%s"}' % command).encode())
     await writer.drain()
@@ -118,17 +119,19 @@ async def get_metrics(target: str):
     #     *[fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
     # ))
 
-    metric_data = dict(
-        [await fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
-    )
-    
-    tags = parse_tags(target, metric_data)
-
-
-    res+= "\n".join(
-            [export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
+    try:
+        metric_data = dict(
+            [await fetch_metrics(target, cmd) for cmd in AVAILABLE_COMMANDS]
         )
+        
+        tags = parse_tags(target, metric_data)
 
+
+        res+= "\n".join(
+                [export_metrics[cmd](metric_data[cmd], tags) for cmd in export_metrics]
+            )
+    except asyncio.exceptions.TimeoutError:
+        raise HTTPException(status_code=408, detail="Timeout while trying to fetch metrics")
     
     # res+= "\n".join(
     #     await asyncio.gather(
